@@ -19,6 +19,10 @@
 
 package org.elasticsearch.action.admin.indices.mapping.put;
 
+import java.io.IOException;
+import java.util.Objects;
+import java.util.Optional;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.ParameterizedMessage;
@@ -40,10 +44,6 @@ import org.elasticsearch.index.Index;
 import org.elasticsearch.index.IndexNotFoundException;
 import org.elasticsearch.threadpool.ThreadPool;
 import org.elasticsearch.transport.TransportService;
-
-import java.io.IOException;
-import java.util.Objects;
-import java.util.Optional;
 
 /**
  * Put mapping action.
@@ -96,6 +96,7 @@ public class TransportPutMappingAction extends TransportMasterNodeAction<PutMapp
     protected void masterOperation(final PutMappingRequest request, final ClusterState state,
                                    final ActionListener<AcknowledgedResponse> listener) {
         try {
+            //具体要更新的索引
             final Index[] concreteIndices = request.getConcreteIndex() == null ?
                 indexNameExpressionResolver.concreteIndices(state, request)
                 : new Index[] {request.getConcreteIndex()};
