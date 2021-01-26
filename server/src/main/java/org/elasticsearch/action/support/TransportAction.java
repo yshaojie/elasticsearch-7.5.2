@@ -18,6 +18,8 @@
  */
 
 package org.elasticsearch.action.support;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.elasticsearch.action.ActionListener;
@@ -27,8 +29,6 @@ import org.elasticsearch.action.ActionResponse;
 import org.elasticsearch.tasks.Task;
 import org.elasticsearch.tasks.TaskListener;
 import org.elasticsearch.tasks.TaskManager;
-
-import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class TransportAction<Request extends ActionRequest, Response extends ActionResponse> {
 
@@ -125,6 +125,12 @@ public abstract class TransportAction<Request extends ActionRequest, Response ex
             listener = new TaskResultStoringActionListener<>(taskManager, task, listener);
         }
 
+        //这里创建filter链来先执行filter后才最终调用doExecute
+        //需要注意的是:
+        //因为TransportAction通过ActionListener来异步的进行请求响应
+        //也就是说ActionFilter通过调用ActionListener.onXXX来终止Filter继续往下传播
+        //所以这里不能通过传统的foreach来处理整个Filter链
+        //详细信息可以参考org.elasticsearch.action.support.ActionFilter.apply的方法注释
         RequestFilterChain<Request, Response> requestFilterChain = new RequestFilterChain<>(this, logger);
         requestFilterChain.proceed(task, actionName, request, listener);
     }
