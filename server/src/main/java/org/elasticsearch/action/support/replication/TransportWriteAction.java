@@ -19,6 +19,10 @@
 
 package org.elasticsearch.action.support.replication;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.ParameterizedMessage;
 import org.elasticsearch.action.ActionListener;
@@ -44,10 +48,6 @@ import org.elasticsearch.indices.IndicesService;
 import org.elasticsearch.threadpool.ThreadPool;
 import org.elasticsearch.transport.TransportResponse;
 import org.elasticsearch.transport.TransportService;
-
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Base class for transport actions that modify data in some shard like index, delete, and shardBulk.
@@ -339,6 +339,8 @@ public abstract class TransportWriteAction<
             indexShard.afterWriteOperation();
             // decrement pending by one, if there is nothing else to do we just respond with success
             maybeFinish();
+            //假如是等待刷新,则添加监听任务
+            //当index刷新后,触发监听
             if (waitUntilRefresh) {
                 assert pendingOps.get() > 0;
                 indexShard.addRefreshListener(location, forcedRefresh -> {
