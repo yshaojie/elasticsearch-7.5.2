@@ -355,6 +355,7 @@ public abstract class TransportWriteAction<
             }
             if (sync) {
                 assert pendingOps.get() > 0;
+                //等待transLog刷到磁盘
                 indexShard.sync(location, (ex) -> {
                     syncFailure.set(ex);
                     maybeFinish();
