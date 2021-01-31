@@ -19,6 +19,12 @@
 
 package org.elasticsearch.action.bulk;
 
+import java.io.IOException;
+import java.util.Map;
+import java.util.concurrent.Executor;
+import java.util.function.Consumer;
+import java.util.function.LongSupplier;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.ParameterizedMessage;
@@ -68,12 +74,6 @@ import org.elasticsearch.node.NodeClosedException;
 import org.elasticsearch.threadpool.ThreadPool;
 import org.elasticsearch.transport.TransportRequestOptions;
 import org.elasticsearch.transport.TransportService;
-
-import java.io.IOException;
-import java.util.Map;
-import java.util.concurrent.Executor;
-import java.util.function.Consumer;
-import java.util.function.LongSupplier;
 
 /** Performs shard-level bulk (index, delete or update) operations */
 public class TransportShardBulkAction extends TransportWriteAction<BulkShardRequest, BulkShardRequest, BulkShardResponse> {
@@ -157,13 +157,17 @@ public class TransportShardBulkAction extends TransportWriteAction<BulkShardRequ
 
             @Override
             protected void doRun() throws Exception {
+                //循环执行还有剩余的IndexRequest,直到全部执行完毕
                 while (context.hasMoreOperationsToExecute()) {
+                    //执行某个IndexRequest,如果执行完毕则返回true,未执行则返回false(比如等待Mapping更新)
                     if (executeBulkItemRequest(context, updateHelper, nowInMillisSupplier, mappingUpdater, waitForMappingUpdate,
                         ActionListener.wrap(v -> executor.execute(this), this::onRejection)) == false) {
                         // We are waiting for a mapping update on another thread, that will invoke this action again once its done
                         // so we just break out here.
                         return;
                     }
+                    //如果某个IndexRequest执行完毕
+                    //BulkPrimaryExecutionContext都会重置到Initial状态
                     assert context.isInitial(); // either completed and moved to next or reset
                 }
                 // We're done, there's no more operations to execute so we resolve the wrapped listener
