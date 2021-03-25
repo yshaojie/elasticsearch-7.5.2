@@ -270,6 +270,8 @@ public abstract class TransportWriteAction<
      * This class encapsulates post write actions like async waits for
      * translog syncs or waiting for a refresh to happen making the write operation
      * visible.
+     * 类AsyncAfterWriteAction主要做两件事情,
+     * 1. 
      */
     static final class AsyncAfterWriteAction {
         private final Location location;
